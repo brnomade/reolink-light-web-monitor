@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cameras</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #111; }
+    .grid {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: flex;
+      -webkit-flex-wrap: wrap;
+      flex-wrap: wrap;
+      width: 100%;
+      height: 100vh;
+    }
+    .cell {
+      width: 50%;
+      height: 50vh;
+      padding: 2px;
+    }
+    .cell img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      background: #000;
+    }
+  </style>
+</head>
+<body>
+  <div class="grid">
+    <div class="cell"><img src="/cam/cam1" onerror="setTimeout(function(){this.src='/cam/cam1?t='+Date.now()},3000)"></div>
+    <div class="cell"><img src="/cam/cam2" onerror="setTimeout(function(){this.src='/cam/cam2?t='+Date.now()},3000)"></div>
+    <div class="cell"><img src="/cam/cam3" onerror="setTimeout(function(){this.src='/cam/cam3?t='+Date.now()},3000)"></div>
+    <div class="cell"><img src="/cam/cam4" onerror="setTimeout(function(){this.src='/cam/cam14t='+Date.now()},3000)"></div>
+  </div>
+</body>
+</html>
