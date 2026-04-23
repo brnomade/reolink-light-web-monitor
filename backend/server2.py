@@ -34,12 +34,12 @@ CAMERAS = {
         "poll_ms": os.getenv("CAM3POOL"),     # POE — faster poll
         "scale": "640:-1"
     },
-    "cam4": {
-        "url": "rtsp://" + os.getenv("CAM4USER") + ":" + os.getenv("CAM4PASS") + "@" + os.getenv("CAM4IP") + ":" + os.getenv("DEFAULT_CAMERA_PORT") + "/h264Preview_01_" + os.getenv("DEFAULT_CAMERA_STREAM"),
-        "fps": os.getenv("CAM4FPS"),
-        "poll_ms": os.getenv("CAM4POOL"),     # POE — faster poll
-        "scale": "640:-1"
-    },
+    #"cam4": {
+    #    "url": "rtsp://" + os.getenv("CAM4USER") + ":" + os.getenv("CAM4PASS") + "@" + os.getenv("CAM4IP") + ":" + os.getenv("DEFAULT_CAMERA_PORT") + "/h264Preview_01_" + os.getenv("DEFAULT_CAMERA_STREAM"),
+    #    "fps": os.getenv("CAM4FPS"),
+    #    "poll_ms": os.getenv("CAM4POOL"),     # POE — faster poll
+    #    "scale": "640:-1"
+    #},
 }
 
 # =============================================================================
