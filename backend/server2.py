@@ -18,26 +18,26 @@ app = Flask(__name__)
 CAMERAS = {
     "cam1": {
         "url": "rtsp://" + os.getenv("CAM1USER") + ":" + os.getenv("CAM1PASS") + "@" + os.getenv("CAM1IP") + ":" + os.getenv("DEFAULT_CAMERA_PORT") + "/h264Preview_01_" + os.getenv("DEFAULT_CAMERA_STREAM"),
-        "fps": "2",
-        "poll_ms": 500,     # WiFi doorbell — slower poll
+        "fps": os.getenv("CAM1FPS"),
+        "poll_ms": os.getenv("CAM1POOL"),     # WiFi doorbell — slower poll
         "scale": "320:-1"
     },
     "cam2": {
         "url": "rtsp://" + os.getenv("CAM2USER") + ":" + os.getenv("CAM2PASS") + "@" + os.getenv("CAM2IP") + ":" + os.getenv("DEFAULT_CAMERA_PORT") + "/h264Preview_01_" + os.getenv("DEFAULT_CAMERA_STREAM"),
-        "fps": "5",
-        "poll_ms": 200,     # POE — faster poll
+        "fps": os.getenv("CAM2FPS"),
+        "poll_ms": os.getenv("CAM2POOL"),     # POE — faster poll
         "scale": "640:-1"
     },
     "cam3": {
         "url": "rtsp://" + os.getenv("CAM3USER") + ":" + os.getenv("CAM3PASS") + "@" + os.getenv("CAM3IP") + ":" + os.getenv("DEFAULT_CAMERA_PORT") + "/h264Preview_01_" + os.getenv("DEFAULT_CAMERA_STREAM"),
-        "fps": "5",
-        "poll_ms": 200,     # POE — faster poll
+        "fps": os.getenv("CAM3FPS"),
+        "poll_ms": os.getenv("CAM3POOL"),     # POE — faster poll
         "scale": "640:-1"
     },
     "cam4": {
         "url": "rtsp://" + os.getenv("CAM4USER") + ":" + os.getenv("CAM4PASS") + "@" + os.getenv("CAM4IP") + ":" + os.getenv("DEFAULT_CAMERA_PORT") + "/h264Preview_01_" + os.getenv("DEFAULT_CAMERA_STREAM"),
-        "fps": "5",
-        "poll_ms": 200,     # POE — faster poll
+        "fps": os.getenv("CAM4FPS"),
+        "poll_ms": os.getenv("CAM4POOL"),     # POE — faster poll
         "scale": "640:-1"
     },
 }

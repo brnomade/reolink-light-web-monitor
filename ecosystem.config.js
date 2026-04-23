@@ -1,7 +1,7 @@
 module.exports = {
   apps: [{
     name: "security-monitor",
-    script: "/home/andre/Coding/reolink-light-web-monitor/backend/server.py",
+    script: "/home/andre/Coding/reolink-light-web-monitor/backend/server2.py",
     interpreter: "/home/andre/Coding/reolink-light-web-monitor/venv/bin/python",
     cwd: "/home/andre/Coding/reolink-light-web-monitor",
     env_file: ".env"
