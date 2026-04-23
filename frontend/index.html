@@ -44,6 +44,12 @@
   // Watchdog — reload any stream that hasn't updated in 15 seconds
   var lastUpdate = {};
   var streams = ['cam1', 'cam2', 'cam3'];
+  var stall_thresholds = {
+      'cam1': 30000,   // doorbell — 30 seconds before declaring stall
+      'cam2': 15000,
+      'cam3': 15000,
+      'cam4': 15000
+  };
 
   streams.forEach(function(id) {
     lastUpdate[id] = Date.now();
@@ -57,7 +63,7 @@
   setInterval(function() {
     var now = Date.now();
     streams.forEach(function(id) {
-      if (now - lastUpdate[id] > 15000) {
+      if (now - lastUpdate[id] > stall_thresholds[id]) {
         var img = document.getElementById(id);
         img.src = '/cam/' + id + '?t=' + now;
         lastUpdate[id] = now;
