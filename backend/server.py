@@ -2,6 +2,7 @@ from flask import Flask, Response
 import subprocess, threading
 import os
 from dotenv import load_dotenv
+import time
 
 load_dotenv()
 
@@ -15,31 +16,38 @@ CAMERAS = {
 }
 
 def mjpeg_stream(rtsp_url):
-    cmd = [
-        "ffmpeg", "-rtsp_transport", "tcp",
-        "-i", rtsp_url,
-        "-f", "mjpeg",        # output format
-        "-q:v", "5",          # quality (2=best, 31=worst)
-        "-vf", "scale=640:-1",# resize to 640px wide
-        "-r", "5",            # 8fps — light on the iPad
-        "pipe:1"
-    ]
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
-    try:
-        while True:
-            # JPEG starts with FFD8, ends with FFD9
-            buf = b""
+    while True:  # outer loop — reconnects FFmpeg if it dies
+        cmd = [
+            "ffmpeg", "-rtsp_transport", "tcp",
+            "-i", rtsp_url,
+            "-f", "mjpeg",
+            "-q:v", "5",
+            "-vf", "scale=640:-1",
+            "-r", "4",
+            "pipe:1"
+        ]
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        try:
             while True:
-                byte = proc.stdout.read(1)
-                if not byte:
-                    return
-                buf += byte
-                if buf[-2:] == b"\xff\xd9":
-                    break
-            yield (b"--frame\r\n"
-                   b"Content-Type: image/jpeg\r\n\r\n" + buf + b"\r\n")
-    finally:
-        proc.kill()
+                buf = b""
+                while True:
+                    byte = proc.stdout.read(1)
+                    if not byte:
+                        raise StopIteration  # FFmpeg died, break to outer loop
+                    buf += byte
+                    if buf[-2:] == b"\xff\xd9":
+                        break
+                yield (b"--frame\r\n"
+                       b"Content-Type: image/jpeg\r\n\r\n" + buf + b"\r\n")
+        except StopIteration:
+            proc.kill()
+            time.sleep(2)  # brief pause before reconnecting
+            continue
+        finally:
+            proc.kill()
+
+
+
 
 @app.route("/cam/<name>")
 def stream(name):

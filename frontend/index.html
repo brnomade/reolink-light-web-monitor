@@ -3,7 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="refresh" content="3600">
+  <!-- Force reload the whole page every 5 minutes: 60 * 5 -->
+  <meta http-equiv="refresh" content="300">
   <title>Tabby 95 Security Cameras</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -33,10 +34,35 @@
 </head>
 <body>
   <div class="grid">
-    <div class="cell"><img src="/cam/cam1" onerror="setTimeout(function(){this.src='/cam/cam1?t='+Date.now()},3000)"></div>
-    <div class="cell"><img src="/cam/cam2" onerror="setTimeout(function(){this.src='/cam/cam2?t='+Date.now()},3000)"></div>
-    <div class="cell"><img src="/cam/cam3" onerror="setTimeout(function(){this.src='/cam/cam3?t='+Date.now()},3000)"></div>
-    <div class="cell"><img src="/cam/cam4" onerror="setTimeout(function(){this.src='/cam/cam4?t='+Date.now()},3000)"></div>
+    <div class="cell"><img id="cam1" src="/cam/cam1" onerror="setTimeout(function(){this.src='/cam/cam1?t='+Date.now()},3000)"></div>
+    <div class="cell"><img id="cam2" src="/cam/cam2" onerror="setTimeout(function(){this.src='/cam/cam2?t='+Date.now()},3000)"></div>
+    <div class="cell"><img id="cam3" src="/cam/cam3" onerror="setTimeout(function(){this.src='/cam/cam3?t='+Date.now()},3000)"></div>
+    <div class="cell"><img id="cam4" src="/cam/cam4" onerror="setTimeout(function(){this.src='/cam/cam4?t='+Date.now()},3000)"></div>
   </div>
 </body>
+<script>
+  // Watchdog — reload any stream that hasn't updated in 15 seconds
+  var lastUpdate = {};
+  var streams = ['cam1', 'cam2', 'cam3'];
+
+  streams.forEach(function(id) {
+    lastUpdate[id] = Date.now();
+    var img = document.getElementById(id);
+
+    img.onload = function() {
+      lastUpdate[id] = Date.now();
+    };
+  });
+
+  setInterval(function() {
+    var now = Date.now();
+    streams.forEach(function(id) {
+      if (now - lastUpdate[id] > 15000) {
+        var img = document.getElementById(id);
+        img.src = '/cam/' + id + '?t=' + now;
+        lastUpdate[id] = now;
+      }
+    });
+  }, 5000);
+</script>
 </html>
