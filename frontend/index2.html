@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="refresh" content="600">
+  <title>Cameras</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #111; }
+    .grid {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: flex;
+      -webkit-flex-wrap: wrap;
+      flex-wrap: wrap;
+      width: 100%;
+      height: 100vh;
+    }
+    .cell {
+      width: 50%;
+      height: 50vh;
+      padding: 2px;
+    }
+    .cell img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      background: #000;
+    }
+  </style>
+</head>
+<body>
+  <div class="grid">
+    <div class="cell"><img id="cam1" src="/cam/cam1"></div>
+    <div class="cell"><img id="cam2" src="/cam/cam2"></div>
+    <div class="cell"><img id="cam3" src="/cam/cam3"></div>
+    <div class="cell"><img id="cam4" src="/cam/cam4"></div>
+  </div>
+
+  <!-- Load per-camera poll intervals from server config -->
+  <script src="/config.js"></script>
+
+  <script>
+    // Poll each camera independently at its configured interval.
+    // Each request fetches a single JPEG snapshot — no persistent connections.
+    var cameras = ["cam1", "cam2", "cam3", "cam4"];
+
+    cameras.forEach(function(id) {
+      var img = document.getElementById(id);
+      var interval = CAMERA_POLL_MS[id] || 500;
+
+      function fetchFrame() {
+        var next = new Image();
+        next.onload = function() {
+          img.src = next.src;
+        };
+        next.src = "/cam/" + id + "?t=" + Date.now();
+      }
+
+      setInterval(fetchFrame, interval);
+    });
+  </script>
+</body>
+</html>
