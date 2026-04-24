@@ -37,28 +37,32 @@ CAMERAS = {
         "fps": os.getenv("CAM1FPS"),
         "poll_ms": os.getenv("CAM1POOL"),     # WiFi doorbell — slower poll
         "scale": "320:-1",
-        "active": os.getenv("CAM1ACTIVE", "True").lower() == "true"
+        "active": os.getenv("CAM1ACTIVE", "True").lower() == "true",
+        "name": os.getenv("CAM1NAME", "cam1")
     },
     "cam2": {
         "url": "rtsp://" + os.getenv("CAM2USER") + ":" + os.getenv("CAM2PASS") + "@" + os.getenv("CAM2IP") + ":" + os.getenv("DEFAULT_CAMERA_PORT") + "/h264Preview_01_" + os.getenv("DEFAULT_CAMERA_STREAM"),
         "fps": os.getenv("CAM2FPS"),
         "poll_ms": os.getenv("CAM2POOL"),     # POE — faster poll
         "scale": "640:-1",
-        "active": os.getenv("CAM2ACTIVE", "True").lower() == "true"
+        "active": os.getenv("CAM2ACTIVE", "True").lower() == "true",
+        "name": os.getenv("CAM2NAME", "cam2")
     },
     "cam3": {
         "url": "rtsp://" + os.getenv("CAM3USER") + ":" + os.getenv("CAM3PASS") + "@" + os.getenv("CAM3IP") + ":" + os.getenv("DEFAULT_CAMERA_PORT") + "/h264Preview_01_" + os.getenv("DEFAULT_CAMERA_STREAM"),
         "fps": os.getenv("CAM3FPS"),
         "poll_ms": os.getenv("CAM3POOL"),     # POE — faster poll
         "scale": "640:-1",
-        "active": os.getenv("CAM3ACTIVE", "True").lower() == "true"
+        "active": os.getenv("CAM3ACTIVE", "True").lower() == "true",
+        "name": os.getenv("CAM3NAME", "cam3")
     },
     "cam4": {
         "url": "rtsp://" + os.getenv("CAM4USER") + ":" + os.getenv("CAM4PASS") + "@" + os.getenv("CAM4IP") + ":" + os.getenv("DEFAULT_CAMERA_PORT") + "/h264Preview_01_" + os.getenv("DEFAULT_CAMERA_STREAM"),
         "fps": os.getenv("CAM4FPS"),
         "poll_ms": os.getenv("CAM4POOL"),     # POE — faster poll
         "scale": "640:-1",
-        "active": os.getenv("CAM4ACTIVE", "True").lower() == "true"
+        "active": os.getenv("CAM4ACTIVE", "True").lower() == "true",
+        "name": os.getenv("CAM4NAME", "cam4")
     },
 }
 
@@ -279,8 +283,11 @@ def config_js():
     for name, config in CAMERAS.items():
         lines.append('  "{}": {},'.format(name, "true" if config["active"] else "false"))
     lines.append("};")
+    lines.append("var CAMERA_NAME = {")
+    for name, config in CAMERAS.items():
+        lines.append('  "{}": "{}",'.format(name, config["name"]))
+    lines.append("};")
     return Response("\n".join(lines), mimetype="application/javascript")
-
 
 @app.route("/")
 def index():

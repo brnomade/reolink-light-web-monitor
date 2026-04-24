@@ -173,7 +173,7 @@
       if (!CAMERA_ACTIVE[id]) {
         cell.className = "cell inactive";
         img.style.display = "none";
-        lbl.textContent = id + " \u2022 not installed";
+        lbl.textContent = CAMERA_NAME[id] + " \u2022 not installed";
         return;
       }
 
@@ -186,12 +186,12 @@
           img.src = next.src;
           lastSuccess[id] = Date.now();
           failCount[id] = 0;
-          lbl.textContent = id + " \u2022 " + timestamp();
+          lbl.textContent = CAMERA_NAME[id] + " \u2022 " + timestamp();
         };
 
         next.onerror = function() {
           failCount[id]++;
-          lbl.textContent = id + " \u2022 ERR x" + failCount[id];
+          lbl.textContent = CAMERA_NAME[id] + " \u2022 ERR x" + failCount[id];
         };
 
         next.src = "/cam/" + id + "?t=" + Date.now();
