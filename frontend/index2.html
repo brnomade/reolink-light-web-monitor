@@ -208,7 +208,7 @@
     //   - server health dot (green/yellow/red based on camera freshness)
     // =========================================================================
     var dot    = document.getElementById("srv-dot");
-    var status = document.getElementById("srv-status");
+    var statusText = document.getElementById("srv-status");
     var clock  = document.getElementById("clock");
     var countdown = document.getElementById("countdown");
 
@@ -247,13 +247,13 @@
 
       if (allOk) {
         dot.className = "indicator ok";
-        status.textContent = "server ok";
+        statusText.textContent = "server ok";
       } else if (anyOk) {
         dot.className = "indicator warn";
-        status.textContent = "partial";
+        statusText.textContent = "partial";
       } else {
         dot.className = "indicator bad";
-        status.textContent = "no signal";
+        statusText.textContent = "no signal";
       }
     }
 
