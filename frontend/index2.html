@@ -109,19 +109,19 @@
   <!-- Camera grid -->
   <div class="grid">
     <div class="cell" id="cell-cam1">
-      <img id="cam1" src="">
+      <img id="cam1" src="" style="display:none">
       <div class="label" id="lbl-cam1">cam1</div>
     </div>
     <div class="cell" id="cell-cam2">
-      <img id="cam2" src="">
+      <img id="cam2" src="" style="display:none">
       <div class="label" id="lbl-cam2">cam2</div>
     </div>
     <div class="cell" id="cell-cam3">
-      <img id="cam3" src="">
+      <img id="cam3" src="" style="display:none">
       <div class="label" id="lbl-cam3">cam3</div>
     </div>
     <div class="cell" id="cell-cam4">
-      <img id="cam4" src="">
+      <img id="cam4" src="" style="display:none">
       <div class="label" id="lbl-cam4">cam4</div>
     </div>
   </div>
@@ -177,6 +177,8 @@
         return;
       }
 
+      // active camera — make visible and start polling
+      img.style.display = "block";
       var interval = CAMERA_POLL_MS[id] || 500;
 
       function fetchFrame() {
