@@ -172,7 +172,7 @@
       // Only poll active cameras
       if (!CAMERA_ACTIVE[id]) {
         cell.className = "cell inactive";
-        img.style.display = "none";
+        img.parentNode.removeChild(img);
         lbl.textContent = CAMERA_NAME[id] + " \u2022 not installed";
         return;
       }
