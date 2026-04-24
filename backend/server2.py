@@ -29,40 +29,45 @@ app = Flask(__name__)
 # fps      = frames per second FFmpeg captures from camera
 # poll_ms  = how often browser requests a new frame (milliseconds)
 # scale    = output resolution
+# active   = False to disable a camera without removing it from config
 # =============================================================================
 CAMERAS = {
     "cam1": {
         "url": "rtsp://" + os.getenv("CAM1USER") + ":" + os.getenv("CAM1PASS") + "@" + os.getenv("CAM1IP") + ":" + os.getenv("DEFAULT_CAMERA_PORT") + "/h264Preview_01_" + os.getenv("DEFAULT_CAMERA_STREAM"),
         "fps": os.getenv("CAM1FPS"),
         "poll_ms": os.getenv("CAM1POOL"),     # WiFi doorbell — slower poll
-        "scale": "320:-1"
+        "scale": "320:-1",
+        "active": os.getenv("CAM1ACTIVE")
     },
     "cam2": {
         "url": "rtsp://" + os.getenv("CAM2USER") + ":" + os.getenv("CAM2PASS") + "@" + os.getenv("CAM2IP") + ":" + os.getenv("DEFAULT_CAMERA_PORT") + "/h264Preview_01_" + os.getenv("DEFAULT_CAMERA_STREAM"),
         "fps": os.getenv("CAM2FPS"),
         "poll_ms": os.getenv("CAM2POOL"),     # POE — faster poll
-        "scale": "640:-1"
+        "scale": "640:-1",
+        "active": os.getenv("CAM2ACTIVE")
     },
     "cam3": {
         "url": "rtsp://" + os.getenv("CAM3USER") + ":" + os.getenv("CAM3PASS") + "@" + os.getenv("CAM3IP") + ":" + os.getenv("DEFAULT_CAMERA_PORT") + "/h264Preview_01_" + os.getenv("DEFAULT_CAMERA_STREAM"),
         "fps": os.getenv("CAM3FPS"),
         "poll_ms": os.getenv("CAM3POOL"),     # POE — faster poll
-        "scale": "640:-1"
+        "scale": "640:-1",
+        "active": os.getenv("CAM3ACTIVE")
     },
-    #"cam4": {
-    #    "url": "rtsp://" + os.getenv("CAM4USER") + ":" + os.getenv("CAM4PASS") + "@" + os.getenv("CAM4IP") + ":" + os.getenv("DEFAULT_CAMERA_PORT") + "/h264Preview_01_" + os.getenv("DEFAULT_CAMERA_STREAM"),
-    #    "fps": os.getenv("CAM4FPS"),
-    #    "poll_ms": os.getenv("CAM4POOL"),     # POE — faster poll
-    #    "scale": "640:-1"
-    #},
+    "cam4": {
+        "url": "rtsp://" + os.getenv("CAM4USER") + ":" + os.getenv("CAM4PASS") + "@" + os.getenv("CAM4IP") + ":" + os.getenv("DEFAULT_CAMERA_PORT") + "/h264Preview_01_" + os.getenv("DEFAULT_CAMERA_STREAM"),
+        "fps": os.getenv("CAM4FPS"),
+        "poll_ms": os.getenv("CAM4POOL"),     # POE — faster poll
+        "scale": "640:-1",
+        "active": os.getenv("CAM4ACTIVE")
+    },
 }
 
 # =============================================================================
 # FRAME STORE
 # One latest JPEG frame per camera plus health metrics.
 # =============================================================================
-latest_frames = {name: None for name in CAMERAS}
-frame_locks = {name: threading.Lock() for name in CAMERAS}
+latest_frames = {name: None for name, config in CAMERAS.items() if config["active"]}
+frame_locks = {name: threading.Lock() for name, config in CAMERAS.items() if config["active"]}
 
 # Health metrics per camera
 health = {
@@ -72,9 +77,21 @@ health = {
         "ffmpeg_restarts": 0,
         "last_restart_at": None,
     }
-    for name in CAMERAS
+    for name, config in CAMERAS.items() if config["active"]
 }
 health_lock = threading.Lock()
+
+# Request metrics — active cameras only
+request_metrics = {
+    name: {
+        "total_requests": 0,
+        "failed_requests": 0,
+        "last_client": None,
+        "last_request_at": None,
+    }
+    for name, config in CAMERAS.items() if config["active"]
+}
+metrics_lock = threading.Lock()
 
 
 # =============================================================================
@@ -137,7 +154,7 @@ def poller(name, config):
 
 # =============================================================================
 # HEALTH REPORTER
-# Logs a summary of all cameras every 60 seconds.
+# Logs a summary every 60 seconds.
 # =============================================================================
 def health_reporter():
     while True:
@@ -191,6 +208,9 @@ def snapshot(name):
     if name not in CAMERAS:
         return "Not found", 404
 
+    if not CAMERAS[name]["active"]:
+        return "Camera not active", 404
+
     client_ip = request.remote_addr
     start = time.time()
 
@@ -219,7 +239,11 @@ def health_endpoint():
     """Human-readable health summary accessible from any browser on the network."""
     lines = []
     with health_lock:
-        for name, h in health.items():
+        for name, config in CAMERAS.items():
+            if not config["active"]:
+                lines.append("{}: inactive".format(name))
+                continue
+            h = health[name]
             last_frame = "never"
             stale = False
             if h["last_frame_at"]:
@@ -251,6 +275,10 @@ def config_js():
     for name, config in CAMERAS.items():
         lines.append('  "{}": {},'.format(name, config["poll_ms"]))
     lines.append("};")
+    lines.append("var CAMERA_ACTIVE = {")
+    for name, config in CAMERAS.items():
+        lines.append('  "{}": {},'.format(name, "true" if config["active"] else "false"))
+    lines.append("};")
     return Response("\n".join(lines), mimetype="application/javascript")
 
 
@@ -263,13 +291,15 @@ def index():
 # STARTUP
 # =============================================================================
 for cam_name, cam_config in CAMERAS.items():
-    t = threading.Thread(target=poller, args=(cam_name, cam_config), daemon=True)
-    t.start()
+    if cam_config["active"]:
+        t = threading.Thread(target=poller, args=(cam_name, cam_config), daemon=True)
+        t.start()
 
 t = threading.Thread(target=health_reporter, daemon=True)
 t.start()
 
-log.info("Camera monitor started with %d cameras", len(CAMERAS))
+log.info("Camera monitor started — active cameras: %s",
+         [n for n, c in CAMERAS.items() if c["active"]])
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, threaded=True)

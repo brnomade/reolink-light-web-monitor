@@ -73,7 +73,10 @@
       background: #000;
     }
 
-    /* Per-camera last-update label */
+    .cell.inactive {
+      background: #1a1a1a;
+    }
+
     .cell .label {
       position: absolute;
       bottom: 6px;
@@ -84,6 +87,10 @@
       padding: 2px 5px;
       border-radius: 3px;
       font-family: monospace;
+    }
+
+    .cell.inactive .label {
+      color: #555;
     }
   </style>
 </head>
@@ -101,19 +108,19 @@
 
   <!-- Camera grid -->
   <div class="grid">
-    <div class="cell">
+    <div class="cell" id="cell-cam1">
       <img id="cam1" src="/cam/cam1">
       <div class="label" id="lbl-cam1">cam1</div>
     </div>
-    <div class="cell">
+    <div class="cell" id="cell-cam2">
       <img id="cam2" src="/cam/cam2">
       <div class="label" id="lbl-cam2">cam2</div>
     </div>
-    <div class="cell">
+    <div class="cell" id="cell-cam3">
       <img id="cam3" src="/cam/cam3">
       <div class="label" id="lbl-cam3">cam3</div>
     </div>
-    <div class="cell">
+    <div class="cell" id="cell-cam4">
       <img id="cam4" src="/cam/cam4">
       <div class="label" id="lbl-cam4">cam4</div>
     </div>
@@ -158,8 +165,18 @@
     // Tracks success/failure and updates per-camera labels.
     // =========================================================================
     cameras.forEach(function(id) {
-      var img = document.getElementById(id);
-      var lbl = document.getElementById("lbl-" + id);
+      var cell = document.getElementById("cell-" + id);
+      var img  = document.getElementById(id);
+      var lbl  = document.getElementById("lbl-" + id);
+
+      // Only poll active cameras
+      if (!CAMERA_ACTIVE[id]) {
+        cell.className = "cell inactive";
+        img.style.display = "none";
+        lbl.textContent = id + " \u2022 not installed";
+        return;
+      }
+
       var interval = CAMERA_POLL_MS[id] || 500;
 
       function fetchFrame() {
@@ -217,7 +234,10 @@
       var allOk = true;
       var anyOk = false;
 
+
       cameras.forEach(function(id) {
+        // Skip inactive cameras when determining health
+        if (!CAMERA_ACTIVE[id]) { return; }
         if (lastSuccess[id] && (now - lastSuccess[id]) < 10000) {
           anyOk = true;
         } else {
