@@ -43,7 +43,7 @@
     #statusbar .indicator.warn { background: #fc0; }
     #statusbar .indicator.bad  { background: #c44; }
 
-    /* Camera grid fills remaining height using padding trick for iOS 9 */
+    /* Camera grid — position absolute avoids calc() for iOS 9 */
     .grid {
       display: -webkit-box;
       display: -webkit-flex;
@@ -135,10 +135,10 @@
     var failCount = {};          // consecutive failures per camera
     var refreshAt = Date.now() + (REFRESH_SECONDS * 1000);
 
-    for (var i = 0; i < cameras.length; i++) {
-      lastSuccess[cameras[i]] = null;
-      failCount[cameras[i]] = 0;
-    }
+    cameras.forEach(function(id) {
+      lastSuccess[id] = null;
+      failCount[id] = 0;
+    });
 
     // =========================================================================
     // HELPERS
@@ -160,7 +160,7 @@
     cameras.forEach(function(id) {
       var img = document.getElementById(id);
       var lbl = document.getElementById("lbl-" + id);
-      var interval = (typeof CAMERA_POLL_MS !== "undefined" && CAMERA_POLL_MS[id]) ? CAMERA_POLL_MS[id] : 500;
+      var interval = CAMERA_POLL_MS[id] || 500;
 
       function fetchFrame() {
         var next = new Image();
@@ -169,23 +169,19 @@
           img.src = next.src;
           lastSuccess[id] = Date.now();
           failCount[id] = 0;
-          if (lbl) { lbl.textContent = id + " " + timestamp(); }
+          lbl.textContent = id + " \u2022 " + timestamp();
         };
 
         next.onerror = function() {
-          failCount[id] = (failCount[id] || 0) + 1;
-          if (lbl) { lbl.textContent = id + " ERR x" + failCount[id]; }
+          failCount[id]++;
+          lbl.textContent = id + " \u2022 ERR x" + failCount[id];
         };
 
         next.src = "/cam/" + id + "?t=" + Date.now();
       }
 
       setInterval(fetchFrame, interval);
-    }
-
-    for (var j = 0; j < cameras.length; j++) {
-      startPolling(cameras[j]);
-    }
+    });
 
     // =========================================================================
     // STATUS BAR
@@ -221,14 +217,13 @@
       var allOk = true;
       var anyOk = false;
 
-      for (var k = 0; k < cameras.length; k++) {
-        var id = cameras[k];
+      cameras.forEach(function(id) {
         if (lastSuccess[id] && (now - lastSuccess[id]) < 10000) {
           anyOk = true;
         } else {
           allOk = false;
         }
-      }
+      });
 
       if (allOk) {
         dot.className = "indicator ok";
