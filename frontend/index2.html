@@ -3,11 +3,46 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="refresh" content="600">
   <title>Cameras</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #111; }
+
+    body {
+      background: #111;
+      font-family: monospace;
+    }
+
+    /* Status bar across the top */
+    #statusbar {
+      width: 100%;
+      background: #1a1a1a;
+      color: #aaa;
+      font-size: 11px;
+      padding: 4px 8px;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: flex;
+      -webkit-justify-content: space-between;
+      justify-content: space-between;
+      -webkit-align-items: center;
+      align-items: center;
+      border-bottom: 1px solid #333;
+    }
+
+    #statusbar .indicator {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 5px;
+      background: #555;
+    }
+
+    #statusbar .indicator.ok   { background: #4c4; }
+    #statusbar .indicator.warn { background: #fc0; }
+    #statusbar .indicator.bad  { background: #c44; }
+
+    /* Camera grid fills remaining height */
     .grid {
       display: -webkit-box;
       display: -webkit-flex;
@@ -15,13 +50,16 @@
       -webkit-flex-wrap: wrap;
       flex-wrap: wrap;
       width: 100%;
-      height: 100vh;
+      height: calc(100vh - 26px);
     }
+
     .cell {
       width: 50%;
-      height: 50vh;
+      height: 50%;
       padding: 2px;
+      position: relative;
     }
+
     .cell img {
       width: 100%;
       height: 100%;
@@ -29,38 +67,177 @@
       display: block;
       background: #000;
     }
+
+    /* Per-camera last-update label */
+    .cell .label {
+      position: absolute;
+      bottom: 6px;
+      left: 6px;
+      background: rgba(0,0,0,0.55);
+      color: #ccc;
+      font-size: 10px;
+      padding: 2px 5px;
+      border-radius: 3px;
+      font-family: monospace;
+    }
   </style>
 </head>
 <body>
-  <div class="grid">
-    <div class="cell"><img id="cam1" src="/cam/cam1"></div>
-    <div class="cell"><img id="cam2" src="/cam/cam2"></div>
-    <div class="cell"><img id="cam3" src="/cam/cam3"></div>
-    <div class="cell"><img id="cam4" src="/cam/cam4"></div>
+
+  <!-- Status bar -->
+  <div id="statusbar">
+    <div>
+      <span class="indicator" id="srv-dot"></span>
+      <span id="srv-status">connecting...</span>
+    </div>
+    <div id="clock">--:--:--</div>
+    <div>refresh in <span id="countdown">--</span>s</div>
   </div>
 
-  <!-- Load per-camera poll intervals from server config -->
+  <!-- Camera grid -->
+  <div class="grid">
+    <div class="cell">
+      <img id="cam1" src="/cam/cam1">
+      <div class="label" id="lbl-cam1">cam1</div>
+    </div>
+    <div class="cell">
+      <img id="cam2" src="/cam/cam2">
+      <div class="label" id="lbl-cam2">cam2</div>
+    </div>
+    <div class="cell">
+      <img id="cam3" src="/cam/cam3">
+      <div class="label" id="lbl-cam3">cam3</div>
+    </div>
+    <div class="cell">
+      <img id="cam4" src="/cam/cam4">
+      <div class="label" id="lbl-cam4">cam4</div>
+    </div>
+  </div>
+
   <script src="/config.js"></script>
 
   <script>
-    // Poll each camera independently at its configured interval.
-    // Each request fetches a single JPEG snapshot — no persistent connections.
+    // =========================================================================
+    // CONFIGURATION
+    // =========================================================================
+    var REFRESH_SECONDS = 300;   // full page reload interval (matches meta refresh)
     var cameras = ["cam1", "cam2", "cam3", "cam4"];
 
+    // =========================================================================
+    // STATE
+    // =========================================================================
+    var lastSuccess = {};        // timestamp of last successful frame per camera
+    var failCount = {};          // consecutive failures per camera
+    var refreshAt = Date.now() + (REFRESH_SECONDS * 1000);
+
+    cameras.forEach(function(id) {
+      lastSuccess[id] = null;
+      failCount[id] = 0;
+    });
+
+    // =========================================================================
+    // CAMERA POLLING
+    // Fetches a fresh snapshot for each camera at its configured interval.
+    // Tracks success/failure and updates per-camera labels.
+    // =========================================================================
     cameras.forEach(function(id) {
       var img = document.getElementById(id);
+      var lbl = document.getElementById("lbl-" + id);
       var interval = CAMERA_POLL_MS[id] || 500;
 
       function fetchFrame() {
         var next = new Image();
+
         next.onload = function() {
           img.src = next.src;
+          lastSuccess[id] = Date.now();
+          failCount[id] = 0;
+          lbl.textContent = id + " \u2022 " + timestamp();
         };
+
+        next.onerror = function() {
+          failCount[id]++;
+          lbl.textContent = id + " \u2022 ERR x" + failCount[id];
+        };
+
         next.src = "/cam/" + id + "?t=" + Date.now();
       }
 
       setInterval(fetchFrame, interval);
     });
+
+    // =========================================================================
+    // STATUS BAR
+    // Updates every second:
+    //   - clock (current time)
+    //   - countdown to next page refresh
+    //   - server health dot (green/yellow/red based on camera freshness)
+    // =========================================================================
+    var dot    = document.getElementById("srv-dot");
+    var status = document.getElementById("srv-status");
+    var clock  = document.getElementById("clock");
+    var countdown = document.getElementById("countdown");
+
+    function timestamp() {
+      var d = new Date();
+      return pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds());
+    }
+
+    function pad(n) {
+      return n < 10 ? "0" + n : "" + n;
+    }
+
+    function updateStatusBar() {
+      // Clock
+      clock.textContent = timestamp();
+
+      // Countdown to refresh
+      var secsLeft = Math.max(0, Math.round((refreshAt - Date.now()) / 1000));
+      countdown.textContent = secsLeft;
+
+      // Server health — based on how stale the most recent camera frames are
+      var now = Date.now();
+      var allOk = true;
+      var anyOk = false;
+
+      cameras.forEach(function(id) {
+        if (lastSuccess[id] && (now - lastSuccess[id]) < 10000) {
+          anyOk = true;
+        } else {
+          allOk = false;
+        }
+      });
+
+      if (allOk) {
+        dot.className = "indicator ok";
+        status.textContent = "server ok";
+      } else if (anyOk) {
+        dot.className = "indicator warn";
+        status.textContent = "partial";
+      } else {
+        dot.className = "indicator bad";
+        status.textContent = "no signal";
+      }
+    }
+
+    setInterval(updateStatusBar, 1000);
+    updateStatusBar();
+
+    // =========================================================================
+    // PAGE REFRESH
+    // Reloads the page after REFRESH_SECONDS to clear browser memory.
+    // Also reloads when the page becomes visible again after being suspended.
+    // =========================================================================
+    setTimeout(function() {
+      window.location.reload();
+    }, REFRESH_SECONDS * 1000);
+
+    document.addEventListener("webkitvisibilitychange", function() {
+      if (!document.webkitHidden) {
+        window.location.reload();
+      }
+    });
+
   </script>
 </body>
 </html>
