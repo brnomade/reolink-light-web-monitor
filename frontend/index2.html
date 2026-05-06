@@ -3,6 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta http-equiv="refresh" content="300">
   <title>Cameras</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -131,6 +135,8 @@
   <script>
     // =========================================================================
     // CONFIGURATION
+    // Page reload is handled by <meta http-equiv="refresh" content="300">.
+    // The countdown here is display-only — it does not trigger the reload.
     // =========================================================================
     var REFRESH_SECONDS = 300;   // full page reload interval (matches meta refresh)
     var cameras = ["cam1", "cam2", "cam3", "cam4"];
@@ -141,6 +147,7 @@
     var lastSuccess = {};        // timestamp of last successful frame per camera
     var failCount = {};          // consecutive failures per camera
     var refreshAt = Date.now() + (REFRESH_SECONDS * 1000);
+    var pageLoadedAt = Date.now();  // ADD THIS LINE
 
     cameras.forEach(function(id) {
       lastSuccess[id] = null;
@@ -165,9 +172,10 @@
     // Tracks success/failure and updates per-camera labels.
     // =========================================================================
     cameras.forEach(function(id) {
-      var cell = document.getElementById("cell-" + id);
-      var img  = document.getElementById(id);
-      var lbl  = document.getElementById("lbl-" + id);
+      var cell    = document.getElementById("cell-" + id);
+      var img     = document.getElementById(id);
+      var lbl     = document.getElementById("lbl-" + id);
+      //var camName = (typeof CAMERA_NAME !== "undefined" && CAMERA_NAME[id]) ? CAMERA_NAME[id] : id;
 
       // Only poll active cameras
       if (!CAMERA_ACTIVE[id]) {
@@ -214,21 +222,13 @@
     var clock  = document.getElementById("clock");
     var countdown = document.getElementById("countdown");
 
-    function timestamp() {
-      var d = new Date();
-      return pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds());
-    }
-
-    function pad(n) {
-      return n < 10 ? "0" + n : "" + n;
-    }
-
     function updateStatusBar() {
       // Clock
       clock.textContent = timestamp();
 
-      // Countdown to refresh
-      var secsLeft = Math.max(0, Math.round((refreshAt - Date.now()) / 1000));
+      // Countdown — calculated from page load time, display only
+      var elapsed  = Math.floor((Date.now() - pageLoadedAt) / 1000);
+      var secsLeft = Math.max(0, REFRESH_SECONDS - elapsed);
       countdown.textContent = secsLeft;
 
       // Server health — based on how stale the most recent camera frames are
@@ -263,13 +263,9 @@
     updateStatusBar();
 
     // =========================================================================
-    // PAGE REFRESH
-    // Reloads the page after REFRESH_SECONDS to clear browser memory.
-    // Also reloads when the page becomes visible again after being suspended.
+    // VISIBILITY CHANGE — reload when page becomes visible after suspension
+    // This handles the case where iOS suspends the page on screen lock.
     // =========================================================================
-    setTimeout(function() {
-      window.location.reload();
-    }, REFRESH_SECONDS * 1000);
 
     // Reload on visibility restore — webkit prefixed for iOS 9
     try {
